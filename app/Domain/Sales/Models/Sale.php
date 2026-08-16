@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Sale extends Model
 {
     protected $fillable = [
-        'api_client_id', 'source', 'location_id', 'folio', 'ticket',
+        'api_client_id', 'source', 'location_id', 'is_test', 'folio', 'ticket',
         'opened_at', 'closed_at', 'station', 'customer_external_id',
         'customer_name', 'subtotal', 'tax', 'total', 'tip',
         'total_with_tip', 'payload_hash', 'raw_payload', 'received_at',
@@ -22,6 +22,7 @@ class Sale extends Model
             'opened_at' => 'datetime',
             'closed_at' => 'datetime',
             'received_at' => 'datetime',
+            'is_test' => 'boolean',
             'raw_payload' => 'array',
             'subtotal' => 'decimal:6',
             'tax' => 'decimal:6',

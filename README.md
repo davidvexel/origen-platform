@@ -178,6 +178,17 @@ Conserva múltiples formas de pago por venta.
 - Los errores de validación y autenticación siempre responden JSON.
 - Producción requiere HTTPS, `APP_DEBUG=false` y credenciales fuera de Git.
 
+## Preservar una venta manual como prueba
+
+Si una venta creada mediante cURL ocupa por accidente una identidad real, puede conservarse como dato de prueba y liberar la identidad sin borrarla:
+
+```bash
+php artisan sales:mark-test 1 --dry-run
+php artisan sales:mark-test 1 --force
+```
+
+Primero use `--dry-run` para revisar ID, origen, sucursal, ticket, total y conteos sin modificar nada. Después de confirmar el objetivo, `--force` marca `is_test = true` y mueve el registro a un origen de pruebas; sus productos y pagos se conservan.
+
 ## Verificación
 
 ```bash
