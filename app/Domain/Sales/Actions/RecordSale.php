@@ -3,6 +3,8 @@
 namespace App\Domain\Sales\Actions;
 
 use App\Domain\Integrations\Models\ApiClient;
+use App\Domain\Loyalty\Actions\AwardSalePoints;
+use App\Domain\Loyalty\Actions\FinalizeSaleRedemption;
 use App\Domain\Loyalty\Models\LoyaltyCustomer;
 use App\Domain\Sales\Models\Sale;
 use App\Domain\Sales\Support\PayloadHasher;
@@ -82,6 +84,9 @@ class RecordSale
                     ],
                 )->all(),
             );
+
+            app(FinalizeSaleRedemption::class)->execute($sale);
+            app(AwardSalePoints::class)->execute($sale);
 
             return new RecordSaleResult($sale, duplicate: false, conflict: false);
         }, attempts: 3);

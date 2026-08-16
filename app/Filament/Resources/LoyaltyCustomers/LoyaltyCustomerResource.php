@@ -7,6 +7,7 @@ use App\Filament\Resources\LoyaltyCustomers\Pages\CreateLoyaltyCustomer;
 use App\Filament\Resources\LoyaltyCustomers\Pages\EditLoyaltyCustomer;
 use App\Filament\Resources\LoyaltyCustomers\Pages\ListLoyaltyCustomers;
 use App\Filament\Resources\LoyaltyCustomers\Pages\ViewLoyaltyCustomer;
+use App\Filament\Resources\LoyaltyCustomers\RelationManagers\MovementsRelationManager;
 use App\Filament\Resources\LoyaltyCustomers\Schemas\LoyaltyCustomerForm;
 use App\Filament\Resources\LoyaltyCustomers\Schemas\LoyaltyCustomerInfolist;
 use App\Filament\Resources\LoyaltyCustomers\Tables\LoyaltyCustomersTable;
@@ -55,7 +56,7 @@ class LoyaltyCustomerResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            MovementsRelationManager::class,
         ];
     }
 

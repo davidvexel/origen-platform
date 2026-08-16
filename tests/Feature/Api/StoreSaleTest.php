@@ -3,6 +3,9 @@
 namespace Tests\Feature\Api;
 
 use App\Domain\Integrations\Models\ApiClient;
+use App\Domain\Loyalty\Actions\RedeemPoints;
+use App\Domain\Loyalty\Models\LoyaltyCustomer;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -132,6 +135,79 @@ class StoreSaleTest extends TestCase
             ->assertJsonValidationErrors('payments');
 
         $this->assertDatabaseCount('sales', 0);
+    }
+
+    public function test_linked_eligible_customer_earns_configured_cashback_once(): void
+    {
+        $this->createClient();
+        $customer = LoyaltyCustomer::query()->create([
+            'name' => 'PRUEBA 2',
+            'external_id' => 'DASDASDSAD2323',
+            'sr_sync_status' => 'synced',
+        ]);
+
+        $this->withToken(self::TOKEN)->postJson('/api/v1/sales', $this->payload())->assertCreated();
+        $this->withToken(self::TOKEN)->postJson('/api/v1/sales', $this->payload())->assertOk();
+
+        $this->assertSame('19.75', $customer->fresh()->points_balance);
+        $this->assertDatabaseHas('loyalty_movements', [
+            'loyalty_customer_id' => $customer->id,
+            'type' => 'earn',
+            'points' => 19.75,
+            'remaining_points' => 19.75,
+        ]);
+        $this->assertDatabaseCount('loyalty_movements', 1);
+    }
+
+    public function test_customer_with_rewards_disabled_does_not_earn_points(): void
+    {
+        $this->createClient();
+        $customer = LoyaltyCustomer::query()->create([
+            'name' => 'Rappi',
+            'external_id' => 'DASDASDSAD2323',
+            'customer_type' => 'channel',
+            'rewards_enabled' => false,
+            'sr_sync_status' => 'synced',
+        ]);
+
+        $this->withToken(self::TOKEN)->postJson('/api/v1/sales', $this->payload())->assertCreated();
+
+        $this->assertSame('0.00', $customer->fresh()->points_balance);
+        $this->assertDatabaseCount('loyalty_movements', 0);
+    }
+
+    public function test_originpoints_payment_completes_pending_redemption_and_does_not_earn_on_redeemed_value(): void
+    {
+        $this->createClient();
+        $cashier = User::factory()->create(['role' => 'cashier']);
+        $customer = LoyaltyCustomer::query()->create([
+            'name' => 'PRUEBA 2',
+            'external_id' => 'DASDASDSAD2323',
+            'sr_sync_status' => 'synced',
+            'points_balance' => 100,
+        ]);
+        $customer->movements()->create([
+            'type' => 'earn', 'points' => 100, 'remaining_points' => 100,
+            'balance_before' => 0, 'balance_after' => 100,
+            'occurred_at' => now(), 'expires_at' => now()->addMonths(6),
+        ]);
+        $redemption = app(RedeemPoints::class)->execute(
+            $customer, '40.00', '395.00', 11, 'origen-playa', $cashier
+        );
+
+        $payload = $this->payload();
+        $payload['payments'] = [
+            ['method' => 'ORIGENPOINTS', 'amount' => 40, 'tip' => 0, 'reference' => $redemption->code],
+            ['method' => 'EF', 'amount' => 355, 'tip' => 25, 'reference' => null],
+        ];
+        $this->withToken(self::TOKEN)->postJson('/api/v1/sales', $payload)->assertCreated();
+
+        $this->assertDatabaseHas('loyalty_redemptions', [
+            'id' => $redemption->id,
+            'status' => 'completed',
+        ]);
+        $this->assertNotNull($redemption->fresh()->sale_id);
+        $this->assertSame('77.75', $customer->fresh()->points_balance);
     }
 
     private function createClient(

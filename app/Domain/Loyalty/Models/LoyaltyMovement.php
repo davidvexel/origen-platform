@@ -10,17 +10,22 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class LoyaltyMovement extends Model
 {
     protected $fillable = [
-        'loyalty_customer_id', 'sale_id', 'type', 'points', 'balance_before',
-        'balance_after', 'reference', 'notes', 'created_by', 'occurred_at',
+        'loyalty_customer_id', 'sale_id', 'type', 'points', 'remaining_points',
+        'balance_before', 'balance_after', 'reference', 'notes', 'metadata',
+        'created_by', 'occurred_at', 'expires_at', 'expired_at',
     ];
 
     protected function casts(): array
     {
         return [
             'points' => 'decimal:2',
+            'remaining_points' => 'decimal:2',
             'balance_before' => 'decimal:2',
             'balance_after' => 'decimal:2',
             'occurred_at' => 'datetime',
+            'expires_at' => 'datetime',
+            'expired_at' => 'datetime',
+            'metadata' => 'array',
         ];
     }
 

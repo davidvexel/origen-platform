@@ -56,11 +56,31 @@ Incluye:
 - bandeja para que cajeros capturen manualmente clientes pendientes en SoftRestaurant;
 - captura de la Clave de SR y vinculación de ventas por `external_id`;
 - pantalla de redención con validación de saldo y movimientos auditables;
+- reglas de recompensas editables por administradores;
+- acumulación idempotente por venta, vencimiento por lotes y redención FIFO;
 - administración de usuarios internos con roles `admin` y `cashier`.
 
 El panel nunca crea ni modifica clientes directamente en SoftRestaurant. La bandeja pendiente es exclusivamente un flujo manual de copiar, capturar en SR y confirmar la Clave obtenida.
 
-La acumulación automática de puntos todavía está desactivada hasta definir formalmente las reglas de recompensa y conversión.
+Las reglas iniciales instaladas son:
+
+```text
+Cashback: 5%
+Valor: 1 punto = $1 MXN
+Propina: no genera puntos
+Redención mínima: 20 puntos
+Vencimiento: 6 meses
+Máximo redimible: 100% de la compra
+Ventas con descuento: sí generan puntos
+```
+
+El cashback se calcula sobre `sale.total`. Este importe ya refleja los descuentos de la venta; la propina sólo se suma a la base cuando la opción correspondiente está activa. Con las reglas iniciales, una venta elegible de `$330.00` genera `16.50` puntos.
+
+Los cambios hechos en **Reglas de recompensas** aplican a ventas y redenciones nuevas. Cada movimiento conserva una fotografía de las reglas utilizadas y los movimientos anteriores no se recalculan automáticamente.
+
+Los clientes tienen un tipo (`Persona`, `Canal / agregador` o `Empresa`) y una bandera independiente **Participa en recompensas**. Cuentas compartidas como Rappi deben configurarse como `Canal / agregador` y con recompensas desactivadas.
+
+Los puntos acumulados se guardan en lotes con fecha de vencimiento. Las redenciones consumen primero los lotes que vencen antes. El comando `loyalty:expire-points` registra los vencimientos como movimientos auditables; también se ejecuta al seleccionar un cliente para redimir.
 
 ### Crear el primer administrador
 
@@ -238,6 +258,19 @@ php artisan route:list --path=admin
 
 Las pruebas cubren autenticación, persistencia completa, cliente opcional, modificadores, pagos múltiples, duplicados, conflictos, aislamiento por ubicación, acceso al panel y redenciones atómicas.
 
+## Flujo de redención en caja
+
+1. Antes de cerrar la cuenta, el cajero abre **Redimir puntos** en el panel.
+2. Busca al cliente e ingresa el folio visible de la cuenta abierta, el total y los puntos.
+3. El sistema reserva los puntos y genera un comprobante de 48 mm.
+4. El cajero imprime el comprobante y solicita la firma del cliente.
+5. En SoftRestaurant registra exactamente el importe indicado usando el método `ORIGENPOINTS` y después cierra la cuenta.
+6. Cuando el conector envía la venta, la plataforma concilia sucursal, folio, cliente e importe y completa la redención.
+
+Una reserva equivocada puede cancelarse antes del cierre y los puntos se devuelven. Las reservas que no se concilian vencen conforme a `LOYALTY_REDEMPTION_EXPIRATION_HOURS` y también devuelven el saldo. La porción pagada con `ORIGENPOINTS` no genera cashback nuevo.
+
+Para imprimir, configure en Windows la impresora térmica con papel de **48 mm** y márgenes mínimos. El navegador abre el diálogo de impresión; seleccione esa impresora y desactive encabezados y pies de página. El comprobante incluye folio, cliente, cajero, importe y espacio para la firma.
+
 ## Despliegue en Laravel Cloud
 
 Después de desplegar el código, ejecutar una vez en el ambiente de producción:
@@ -250,9 +283,14 @@ php artisan filament:optimize
 
 El segundo comando sólo es necesario si todavía no existe un administrador. No ejecutar `migrate:fresh` en producción porque elimina todos los datos.
 
+Para que los vencimientos se procesen aunque ningún cajero abra la pantalla de redención, la instancia de Laravel Cloud debe tener habilitado el scheduler. La tarea está programada diariamente a las `02:15`:
+
+```bash
+php artisan loyalty:expire-points
+```
+
 ## Próximos módulos
 
-1. Definir reglas de acumulación, vencimiento y equivalencia monetaria de puntos.
-2. Construir el registro/autenticación de clientes en la app pública con verificación de contacto y consentimiento.
-3. Añadir ajustes de puntos protegidos para administradores.
-4. Incorporar el módulo aislado de facturación y su proveedor/PAC.
+1. Construir el registro/autenticación de clientes en la app pública con verificación de contacto y consentimiento.
+2. Añadir ajustes de puntos protegidos para administradores.
+3. Incorporar el módulo aislado de facturación y su proveedor/PAC.

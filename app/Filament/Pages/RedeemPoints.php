@@ -2,8 +2,12 @@
 
 namespace App\Filament\Pages;
 
+use App\Domain\Loyalty\Actions\CancelRedemption;
+use App\Domain\Loyalty\Actions\ExpireCustomerPoints;
 use App\Domain\Loyalty\Actions\RedeemPoints as RedeemPointsAction;
 use App\Domain\Loyalty\Models\LoyaltyCustomer;
+use App\Domain\Loyalty\Models\LoyaltyProgramSetting;
+use App\Domain\Loyalty\Models\LoyaltyRedemption;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
@@ -26,9 +30,15 @@ class RedeemPoints extends Page
 
     public string $points = '';
 
+    public string $purchaseTotal = '';
+
+    public string $srFolio = '';
+
     public string $reference = '';
 
     public string $notes = '';
+
+    public ?int $lastRedemptionId = null;
 
     /** @return Collection<int, LoyaltyCustomer> */
     #[Computed]
@@ -40,6 +50,7 @@ class RedeemPoints extends Page
 
         return LoyaltyCustomer::query()
             ->where('status', 'active')
+            ->where('rewards_enabled', true)
             ->where(function ($query): void {
                 $term = '%'.trim($this->search).'%';
                 $query->where('name', 'like', $term)
@@ -57,9 +68,16 @@ class RedeemPoints extends Page
         return $this->customerId === null ? null : LoyaltyCustomer::query()->find($this->customerId);
     }
 
+    #[Computed]
+    public function settings(): LoyaltyProgramSetting
+    {
+        return LoyaltyProgramSetting::current();
+    }
+
     public function selectCustomer(int $customerId): void
     {
         $customer = LoyaltyCustomer::query()->where('status', 'active')->findOrFail($customerId);
+        app(ExpireCustomerPoints::class)->execute($customer);
         $this->customerId = $customer->id;
         $this->search = $customer->name;
         unset($this->searchResults, $this->customer);
@@ -67,7 +85,7 @@ class RedeemPoints extends Page
 
     public function clearCustomer(): void
     {
-        $this->reset(['customerId', 'search', 'points', 'reference', 'notes']);
+        $this->reset(['customerId', 'search', 'points', 'purchaseTotal', 'srFolio', 'reference', 'notes', 'lastRedemptionId']);
         unset($this->searchResults, $this->customer);
     }
 
@@ -76,20 +94,43 @@ class RedeemPoints extends Page
         $validated = $this->validate([
             'customerId' => ['required', 'integer', 'exists:loyalty_customers,id'],
             'points' => ['required', 'numeric', 'min:0.01'],
+            'purchaseTotal' => ['required', 'numeric', 'min:0.01'],
+            'srFolio' => ['required', 'integer', 'min:1'],
             'reference' => ['nullable', 'string', 'max:100'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
         $customer = LoyaltyCustomer::query()->findOrFail($validated['customerId']);
-        $action->execute(
+        $redemption = $action->execute(
             $customer,
             (string) $validated['points'],
+            (string) $validated['purchaseTotal'],
+            (int) $validated['srFolio'],
+            (string) config('loyalty.location_id'),
             auth()->user(),
             $validated['reference'] ?: null,
             $validated['notes'] ?: null,
         );
 
-        Notification::make()->title('Redención registrada')->success()->send();
+        $this->lastRedemptionId = $redemption->id;
+        unset($this->customer);
+        Notification::make()->title('Puntos reservados; imprime el comprobante')->success()->send();
+    }
+
+    public function cancelLastRedemption(CancelRedemption $action): void
+    {
+        $redemption = LoyaltyRedemption::query()->findOrFail($this->lastRedemptionId);
+        $action->execute($redemption, auth()->user(), 'cancelled_by_cashier');
+
+        Notification::make()->title('Redención cancelada; los puntos fueron devueltos')->success()->send();
         $this->clearCustomer();
+    }
+
+    #[Computed]
+    public function lastRedemption(): ?LoyaltyRedemption
+    {
+        return $this->lastRedemptionId === null
+            ? null
+            : LoyaltyRedemption::query()->with(['customer', 'cashier'])->find($this->lastRedemptionId);
     }
 }

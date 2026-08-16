@@ -11,8 +11,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class LoyaltyCustomer extends Model
 {
     protected $fillable = [
-        'external_id', 'name', 'email', 'phone', 'birthday', 'points_balance',
-        'status', 'sr_sync_status', 'sr_synced_at', 'sr_sync_notes', 'registered_by',
+        'external_id', 'name', 'customer_type', 'email', 'phone', 'birthday', 'points_balance',
+        'rewards_enabled', 'status', 'sr_sync_status', 'sr_synced_at', 'sr_sync_notes', 'registered_by',
     ];
 
     protected function casts(): array
@@ -20,6 +20,7 @@ class LoyaltyCustomer extends Model
         return [
             'birthday' => 'date',
             'points_balance' => 'decimal:2',
+            'rewards_enabled' => 'boolean',
             'sr_synced_at' => 'datetime',
         ];
     }
@@ -37,5 +38,10 @@ class LoyaltyCustomer extends Model
     public function sales(): HasMany
     {
         return $this->hasMany(Sale::class);
+    }
+
+    public function redemptions(): HasMany
+    {
+        return $this->hasMany(LoyaltyRedemption::class);
     }
 }

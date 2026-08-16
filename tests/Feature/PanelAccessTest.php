@@ -36,6 +36,8 @@ class PanelAccessTest extends TestCase
         $this->actingAs($cashier)->get('/admin/pending-sr-customers')->assertOk();
         $this->actingAs($cashier)->get('/admin/redeem-points')->assertOk();
         $this->actingAs($cashier)->get('/admin/users')->assertForbidden();
+        $this->actingAs($cashier)->get('/admin/loyalty-program-settings')->assertForbidden();
+        $this->actingAs($cashier)->get('/admin/loyalty-program-settings/1/edit')->assertForbidden();
     }
 
     public function test_admin_can_open_user_administration(): void
@@ -43,5 +45,6 @@ class PanelAccessTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin', 'active' => true]);
 
         $this->actingAs($admin)->get('/admin/users')->assertOk();
+        $this->actingAs($admin)->get('/admin/loyalty-program-settings')->assertOk();
     }
 }
