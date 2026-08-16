@@ -33,7 +33,7 @@ class StoreSaleRequest extends FormRequest
             'totals.tip' => ['required', 'numeric'],
             'totals.total_with_tip' => ['required', 'numeric'],
 
-            'items' => ['required', 'array', 'max:500'],
+            'items' => ['required', 'array', 'min:1', 'max:500'],
             'items.*.product_id' => ['required', 'string', 'max:100'],
             'items.*.name' => ['nullable', 'string', 'max:255'],
             'items.*.quantity' => ['required', 'numeric'],
@@ -43,7 +43,7 @@ class StoreSaleRequest extends FormRequest
             'items.*.compound_id' => ['nullable', 'string', 'max:100'],
             'items.*.compound_main' => ['required', 'boolean'],
 
-            'payments' => ['required', 'array', 'max:20'],
+            'payments' => ['required', 'array', 'min:1', 'max:20'],
             'payments.*.method' => ['required', 'string', 'max:50'],
             'payments.*.amount' => ['required', 'numeric'],
             'payments.*.tip' => ['required', 'numeric'],

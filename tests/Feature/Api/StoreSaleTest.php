@@ -120,6 +120,20 @@ class StoreSaleTest extends TestCase
         ]);
     }
 
+    public function test_sale_requires_at_least_one_payment(): void
+    {
+        $this->createClient();
+        $payload = $this->payload();
+        $payload['payments'] = [];
+
+        $this->withToken(self::TOKEN)
+            ->postJson('/api/v1/sales', $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('payments');
+
+        $this->assertDatabaseCount('sales', 0);
+    }
+
     private function createClient(
         string $locationId = 'origen-playa',
         string $token = self::TOKEN,
