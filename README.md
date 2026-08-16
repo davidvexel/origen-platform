@@ -70,6 +70,14 @@ php artisan panel-user:create "Administrador" admin@origennatural.mx --role=admi
 
 El comando solicita la contraseña de forma oculta. Los administradores pueden crear cajeros desde **Equipo** dentro del panel.
 
+La pestaña Commands de Laravel Cloud no acepta prompts interactivos. En Cloud debe generarse una contraseña temporal:
+
+```bash
+php artisan panel-user:create "Administrador" admin@origennatural.mx --role=admin --generate-password
+```
+
+Copie la contraseña mostrada una sola vez, inicie sesión y cámbiela desde **Equipo**.
+
 ## Instalación local
 
 ```bash
@@ -236,7 +244,7 @@ Después de desplegar el código, ejecutar una vez en el ambiente de producción
 
 ```bash
 php artisan migrate --force
-php artisan panel-user:create "Administrador" admin@origennatural.mx --role=admin
+php artisan panel-user:create "Administrador" admin@origennatural.mx --role=admin --generate-password
 php artisan filament:optimize
 ```
 

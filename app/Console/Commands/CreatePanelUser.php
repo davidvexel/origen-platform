@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 
 class CreatePanelUser extends Command
@@ -13,7 +14,8 @@ class CreatePanelUser extends Command
     protected $signature = 'panel-user:create
         {name : Full name}
         {email : Login email}
-        {--role=admin : admin or cashier}';
+        {--role=admin : admin or cashier}
+        {--generate-password : Generate and display a temporary password for non-interactive environments}';
 
     protected $description = 'Create an administrator or cashier for the Filament panel';
 
@@ -27,8 +29,13 @@ class CreatePanelUser extends Command
             return self::FAILURE;
         }
 
-        $password = (string) $this->secret('Password (minimum 8 characters)');
-        $confirmation = (string) $this->secret('Confirm password');
+        $generatedPassword = (bool) $this->option('generate-password');
+        $password = $generatedPassword
+            ? Str::password(20)
+            : (string) $this->secret('Password (minimum 8 characters)');
+        $confirmation = $generatedPassword
+            ? $password
+            : (string) $this->secret('Confirm password');
         $data = [
             'name' => $this->argument('name'),
             'email' => $this->argument('email'),
@@ -60,6 +67,11 @@ class CreatePanelUser extends Command
         ]);
 
         $this->info("Panel user created with role {$role}.");
+
+        if ($generatedPassword) {
+            $this->warn('Copy this temporary password now and change it after signing in:');
+            $this->line($password);
+        }
 
         return self::SUCCESS;
     }
