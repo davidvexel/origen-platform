@@ -3,6 +3,7 @@
 namespace App\Domain\Sales\Models;
 
 use App\Domain\Integrations\Models\ApiClient;
+use App\Domain\Loyalty\Models\LoyaltyCustomer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,7 +13,7 @@ class Sale extends Model
     protected $fillable = [
         'api_client_id', 'source', 'location_id', 'is_test', 'folio', 'ticket',
         'opened_at', 'closed_at', 'station', 'customer_external_id',
-        'customer_name', 'subtotal', 'tax', 'total', 'tip',
+        'customer_name', 'loyalty_customer_id', 'subtotal', 'tax', 'total', 'tip',
         'total_with_tip', 'payload_hash', 'raw_payload', 'received_at',
     ];
 
@@ -35,6 +36,11 @@ class Sale extends Model
     public function apiClient(): BelongsTo
     {
         return $this->belongsTo(ApiClient::class);
+    }
+
+    public function loyaltyCustomer(): BelongsTo
+    {
+        return $this->belongsTo(LoyaltyCustomer::class);
     }
 
     public function items(): HasMany

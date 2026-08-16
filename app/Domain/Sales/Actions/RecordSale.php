@@ -3,6 +3,7 @@
 namespace App\Domain\Sales\Actions;
 
 use App\Domain\Integrations\Models\ApiClient;
+use App\Domain\Loyalty\Models\LoyaltyCustomer;
 use App\Domain\Sales\Models\Sale;
 use App\Domain\Sales\Support\PayloadHasher;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +17,9 @@ class RecordSale
             $payloadHash = PayloadHasher::hash($payload);
             $customer = $payload['customer'] ?? null;
             $totals = $payload['totals'];
+            $loyaltyCustomer = empty($customer['external_id'] ?? null)
+                ? null
+                : LoyaltyCustomer::query()->where('external_id', $customer['external_id'])->first();
 
             $sale = Sale::query()->firstOrCreate(
                 [
@@ -31,6 +35,7 @@ class RecordSale
                     'station' => $payload['station'] ?? null,
                     'customer_external_id' => $customer['external_id'] ?? null,
                     'customer_name' => $customer['name'] ?? null,
+                    'loyalty_customer_id' => $loyaltyCustomer?->id,
                     'subtotal' => $totals['subtotal'],
                     'tax' => $totals['tax'],
                     'total' => $totals['total'],

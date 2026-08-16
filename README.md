@@ -1,6 +1,6 @@
 # Origen Platform
 
-Aplicación web Laravel para recibir las ventas de Origen SR Connector. Esta primera versión implementa únicamente el módulo `Sales`: autenticación de instalaciones, validación, idempotencia y persistencia de ventas, productos y pagos.
+Aplicación web Laravel para recibir las ventas de Origen SR Connector y operar el inicio del programa Loyalty. Incluye API autenticada, persistencia de ventas y un panel interno construido con Filament 5.
 
 ## Arquitectura inicial
 
@@ -39,6 +39,36 @@ source + location_id + ticket
 - SQLite para desarrollo; MySQL o PostgreSQL para producción.
 
 El proyecto fue creado con Laravel 13.
+
+## Panel interno
+
+El panel está disponible en:
+
+```text
+/admin
+```
+
+Incluye:
+
+- dashboard con ventas del día, total y clientes pendientes;
+- listado y detalle de ventas, productos y pagos en modo de sólo lectura;
+- registro y consulta de clientes Loyalty;
+- bandeja para que cajeros capturen manualmente clientes pendientes en SoftRestaurant;
+- captura de la Clave de SR y vinculación de ventas por `external_id`;
+- pantalla de redención con validación de saldo y movimientos auditables;
+- administración de usuarios internos con roles `admin` y `cashier`.
+
+El panel nunca crea ni modifica clientes directamente en SoftRestaurant. La bandeja pendiente es exclusivamente un flujo manual de copiar, capturar en SR y confirmar la Clave obtenida.
+
+La acumulación automática de puntos todavía está desactivada hasta definir formalmente las reglas de recompensa y conversión.
+
+### Crear el primer administrador
+
+```bash
+php artisan panel-user:create "Administrador" admin@origennatural.mx --role=admin
+```
+
+El comando solicita la contraseña de forma oculta. Los administradores pueden crear cajeros desde **Equipo** dentro del panel.
 
 ## Instalación local
 
@@ -195,13 +225,26 @@ Primero use `--dry-run` para revisar ID, origen, sucursal, ticket, total y conte
 php artisan test
 vendor/bin/pint --test
 php artisan route:list --path=api
+php artisan route:list --path=admin
 ```
 
-Las pruebas cubren autenticación, persistencia completa, cliente opcional, modificadores, pagos múltiples, duplicados, conflictos y aislamiento por ubicación.
+Las pruebas cubren autenticación, persistencia completa, cliente opcional, modificadores, pagos múltiples, duplicados, conflictos, aislamiento por ubicación, acceso al panel y redenciones atómicas.
+
+## Despliegue en Laravel Cloud
+
+Después de desplegar el código, ejecutar una vez en el ambiente de producción:
+
+```bash
+php artisan migrate --force
+php artisan panel-user:create "Administrador" admin@origennatural.mx --role=admin
+php artisan filament:optimize
+```
+
+El segundo comando sólo es necesario si todavía no existe un administrador. No ejecutar `migrate:fresh` en producción porque elimina todos los datos.
 
 ## Próximos módulos
 
-1. Integrar `HttpLoyaltyApiClient` en el conector .NET.
-2. Añadir eventos posteriores al commit para Loyalty.
-3. Construir cuentas, movimientos y reglas de recompensas.
+1. Definir reglas de acumulación, vencimiento y equivalencia monetaria de puntos.
+2. Construir el registro/autenticación de clientes en la app pública con verificación de contacto y consentimiento.
+3. Añadir ajustes de puntos protegidos para administradores.
 4. Incorporar el módulo aislado de facturación y su proveedor/PAC.
