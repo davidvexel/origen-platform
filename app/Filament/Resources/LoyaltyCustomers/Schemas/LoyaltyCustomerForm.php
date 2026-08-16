@@ -37,13 +37,15 @@ class LoyaltyCustomerForm
                         ->disabled(fn (): bool => ! (auth()->user()?->isAdmin() ?? false)),
                 ])->columns(2),
                 Section::make('Sincronización manual con SoftRestaurant')->schema([
-                    TextInput::make('external_id')->label('Clave en SoftRestaurant')->maxLength(100)
-                        ->helperText('Déjalo vacío hasta que el cliente sea capturado manualmente en SR.'),
+                    TextInput::make('external_id')->label('Clave en SoftRestaurant')
+                        ->disabled()->dehydrated(false)
+                        ->placeholder('Se generará al guardar')
+                        ->helperText('La plataforma genera automáticamente una Clave ON-XXXXXX.'),
                     Select::make('sr_sync_status')->label('Estado SR')->options([
                         'pending' => 'Pendiente',
                         'synced' => 'Sincronizado',
                         'failed' => 'Revisar',
-                    ])->default('pending')->required(),
+                    ])->default('pending')->disabled()->dehydrated(false),
                     Textarea::make('sr_sync_notes')->label('Notas')->columnSpanFull(),
                 ])->columns(2),
             ]);

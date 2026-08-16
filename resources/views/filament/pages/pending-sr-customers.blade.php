@@ -1,7 +1,7 @@
 <x-filament-panels::page>
     <x-filament::section>
         <x-slot name="heading">Flujo manual y seguro</x-slot>
-        <x-slot name="description">Copia los datos, crea el cliente manualmente en SoftRestaurant y después captura aquí la Clave asignada. Esta pantalla nunca escribe en SR.</x-slot>
+        <x-slot name="description">La plataforma ya asignó la Clave SR. Cópiala junto con los datos, crea el cliente manualmente en SoftRestaurant y marca el registro como sincronizado. Esta pantalla nunca escribe en SR.</x-slot>
     </x-filament::section>
 
     <div class="space-y-4">
@@ -24,11 +24,13 @@
                     </div>
 
                     <form wire:submit="markSynced({{ $customer->id }})" class="space-y-3">
-                        <label class="block">
-                            <span class="mb-1 block text-sm font-medium">Clave asignada en SR</span>
-                            <input type="text" wire:model="externalIds.{{ $customer->id }}" maxlength="100" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 dark:border-white/10 dark:bg-white/5" placeholder="Ej. CLIENTE001" required>
-                            @error("externalIds.{$customer->id}") <span class="mt-1 block text-sm text-danger-600">{{ $message }}</span> @enderror
-                        </label>
+                        <div>
+                            <span class="mb-1 block text-sm font-medium">Clave para SoftRestaurant</span>
+                            <div class="flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 dark:border-white/10 dark:bg-white/5">
+                                <strong class="font-mono text-lg tracking-wider">{{ $customer->external_id }}</strong>
+                                <x-filament::icon-button icon="heroicon-o-clipboard" color="gray" size="sm" x-on:click="navigator.clipboard.writeText(@js($customer->external_id))" label="Copiar Clave SR" />
+                            </div>
+                        </div>
                         <x-filament::button type="submit" icon="heroicon-o-check">Marcar sincronizado</x-filament::button>
                     </form>
                 </div>

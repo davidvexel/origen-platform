@@ -8,7 +8,6 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 
 class PendingSrCustomers extends Page
@@ -20,9 +19,6 @@ class PendingSrCustomers extends Page
     protected static ?string $title = 'Clientes pendientes en SoftRestaurant';
 
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;
-
-    /** @var array<int, string> */
-    public array $externalIds = [];
 
     #[Computed]
     public function customers()
@@ -46,14 +42,7 @@ class PendingSrCustomers extends Page
             ->where('sr_sync_status', 'pending')
             ->findOrFail($customerId);
 
-        $validated = $this->validate([
-            "externalIds.{$customerId}" => [
-                'required', 'string', 'max:100',
-                Rule::unique('loyalty_customers', 'external_id')->ignore($customer->id),
-            ],
-        ], ["externalIds.{$customerId}.required" => 'Captura la Clave asignada en SoftRestaurant.']);
-
-        $externalId = trim($validated['externalIds'][$customerId]);
+        $externalId = $customer->external_id;
         DB::transaction(function () use ($customer, $externalId): void {
             $customer->update([
                 'external_id' => $externalId,
@@ -66,7 +55,7 @@ class PendingSrCustomers extends Page
                 ->update(['loyalty_customer_id' => $customer->id]);
         });
 
-        unset($this->externalIds[$customerId], $this->customers);
+        unset($this->customers);
         Notification::make()->title('Cliente marcado como sincronizado')->success()->send();
     }
 }

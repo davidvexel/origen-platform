@@ -271,6 +271,19 @@ Una reserva equivocada puede cancelarse antes del cierre y los puntos se devuelv
 
 Para imprimir, configure en Windows la impresora térmica con papel de **48 mm** y márgenes mínimos. El navegador abre el diálogo de impresión; seleccione esa impresora y desactive encabezados y pies de página. El comprobante incluye folio, cliente, cajero, importe y espacio para la firma.
 
+## Tarjeta Origen Rewards y QR
+
+Todo cliente nuevo recibe automáticamente una Clave de SoftRestaurant con formato `ON-XXXXXX`. En **Pendientes en SR**, el cajero copia esa clave al crear manualmente al cliente en SoftRestaurant y después marca la sincronización como terminada.
+
+Al abrir un cliente en Filament, el botón **Ver tarjeta y QR** emite su credencial si todavía no existe. El QR contiene exclusivamente la Clave SR `ON-XXXXXX`; nunca incluye teléfono, correo o ID interno. Un lector QR USB puede escribir esa clave directamente en el campo activo de SoftRestaurant porque funciona como teclado.
+
+El cajero usa **Escanear tarjeta** para leer el QR con la cámara y abrir al cliente directamente en la pantalla de redención. Chrome o Edge recientes pueden usar la cámara; también existe captura manual como respaldo. El QR identifica al cliente pero no autoriza por sí solo una redención. El enlace privado de la tarjeta web utiliza adicionalmente un token aleatorio cifrado y revocable.
+
+TODO para wallets:
+
+- Apple Wallet: configurar Pass Type ID, certificados, firma de `.pkpass` y servicio de actualizaciones.
+- Google Wallet: configurar Issuer ID, Service Account, Loyalty Class/Object y actualizaciones de saldo.
+
 ## Despliegue en Laravel Cloud
 
 Después de desplegar el código, ejecutar una vez en el ambiente de producción:

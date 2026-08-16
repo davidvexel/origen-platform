@@ -2,11 +2,13 @@
 
 namespace App\Domain\Loyalty\Models;
 
+use App\Domain\Loyalty\Support\SoftRestaurantCustomerId;
 use App\Domain\Sales\Models\Sale;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class LoyaltyCustomer extends Model
 {
@@ -14,6 +16,15 @@ class LoyaltyCustomer extends Model
         'external_id', 'name', 'customer_type', 'email', 'phone', 'birthday', 'points_balance',
         'rewards_enabled', 'status', 'sr_sync_status', 'sr_synced_at', 'sr_sync_notes', 'registered_by',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (LoyaltyCustomer $customer): void {
+            if (blank($customer->external_id)) {
+                $customer->external_id = SoftRestaurantCustomerId::generate();
+            }
+        });
+    }
 
     protected function casts(): array
     {
@@ -43,5 +54,10 @@ class LoyaltyCustomer extends Model
     public function redemptions(): HasMany
     {
         return $this->hasMany(LoyaltyRedemption::class);
+    }
+
+    public function credential(): HasOne
+    {
+        return $this->hasOne(LoyaltyCredential::class);
     }
 }

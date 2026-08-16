@@ -40,6 +40,23 @@ class RedeemPoints extends Page
 
     public ?int $lastRedemptionId = null;
 
+    public function mount(): void
+    {
+        $externalId = request()->query('customer');
+        if ($externalId === null) {
+            return;
+        }
+
+        $customer = LoyaltyCustomer::query()
+            ->where('external_id', strtoupper((string) $externalId))
+            ->where('status', 'active')
+            ->first();
+        if ($customer !== null) {
+            $customer->credential?->update(['last_used_at' => now()]);
+            $this->selectCustomer($customer->id);
+        }
+    }
+
     /** @return Collection<int, LoyaltyCustomer> */
     #[Computed]
     public function searchResults()
