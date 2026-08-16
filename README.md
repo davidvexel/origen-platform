@@ -18,6 +18,8 @@ Origen Platform
             └── sale_payments
 ```
 
+`GET /api/v1/connector` permite validar de forma autenticada el token y la sucursal sin crear una venta.
+
 La sucursal no se acepta desde el payload. Se obtiene del token autenticado para impedir que una instalación atribuya ventas a otra ubicación.
 
 La clave idempotente es:
